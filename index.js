@@ -26,10 +26,13 @@ mongoose.connect(MONGO_URI)
 const autenticar = async (req, res, next) => {
     try{
         const token = req.headers.authorization?.split(' ')[1];
+        console.log("token", token );
         if(!token)
             res.status(401).json({mensaje:'No existe el token de autenticacion'});
         const decodificar = jwt.verify(token, 'clave_secreta');
-        req.usuario = await Usuario.findById(decodificar.usuarioId);g
+        console.log("decodificar", decodificar );
+        req.usuario = await Usuario.findById(decodificar.usuarioId);
+        console.log(req);
         next();
     } 
     catch(error){

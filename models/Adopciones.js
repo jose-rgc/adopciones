@@ -6,7 +6,8 @@ const adopcionesSchema = new mongoose.Schema({
     genero: String,
     edad: Number,
     contacto: Number,
-    fecha_vacunas: String
+    fecha_vacunas: String,
+    usuario: {type: mongoose.Schema.Types.ObjectId, ref: 'Usuario'}
 });
 const AdopcionesModel = mongoose.model('Adopciones', adopcionesSchema, 'adopciones');
 module.exports = AdopcionesModel;

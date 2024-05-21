@@ -1,6 +1,7 @@
 const express = require('express');
 const rutas = express.Router();
 const AdopcionesModel = require ('../models/Adopciones');
+const UsuarioModel = require('../models/Usuario');
 // 1. endpoint: Traer todas las adopciones
 rutas.get('/traerAdopciones', async (req, res) => {
     try {
@@ -18,8 +19,10 @@ rutas.post('/crear', async (req, res) => {
         genero: req.body.genero,
         edad: req.body.edad,
         contacto: req.body.contacto,
-        fecha_vacunas: req.body.fecha_vacunas
+        fecha_vacunas: req.body.fecha_vacunas,
+        usuario: req.body.usuario //asignar el id del usuario
     })
+    console.log(adopciones);
     try {
         const nuevaAdopcion = await adopciones.save();
         res.status(201).json(nuevaAdopcion);
@@ -100,4 +103,48 @@ rutas.get('/FechaVacunacionEspecifica/:fecha', async (req, res) => {
         res.status(500).json({ mensaje: error.message });
     }
 });
+
+//REPORTES 1
+rutas.get('/adopcionPorUsuario/:usuarioId', async (peticion, respuesta) => {
+    const {usuarioId} = peticion.params;
+    console.log(usuarioId);
+    try{
+        const usuario = await UsuarioModel.findById(usuarioId);
+        if (!usuario)
+            return respuesta.status(404).json({mensaje: 'usuario no encontrado'});
+        const adopciones = await AdopcionesModel.find({usuario : usuarioId}).populate('usuario');
+        respuesta.json(adopciones);
+    }catch (error) {
+        respuesta.status(500).json({ mensaje: error.message });
+    }
+});
+//REPORTES 2
+//Sumar edades de adopciones por usuarios
+rutas.get('/edadPorUsuario', async (req, res) => {
+    try{
+        const usuarios = await UsuarioModel.find();
+        const reporte = await Promise.all(
+            usuarios.map( async (usuario1) => {
+                const adopciones = await AdopcionesModel.find({usuario: usuario1._id});
+                const totalEdades = adopciones.reduce((sum, adopcion) => sum + adopcion.edad, 0);
+                return {
+                    usuario: { 
+                        _id: usuario1._id,
+                        nombreusuario: usuario1.nombreusuario
+                    },
+                    totalEdades,
+                    adopciones: adopciones.map(a => ({
+                        _id: a._id,
+                        nombre_mascota: a.nombre_mascota,
+                        edades: a.edad
+                    })) 
+                }
+            })
+        )
+        res.json(reporte);
+    }catch (error){
+        res.status(500).json
+    }
+})
+
 module.exports = rutas;
