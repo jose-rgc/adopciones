@@ -35,4 +35,12 @@ rutas.post('/iniciarsesion', async (req, res) => {
         res.status(500).json({mensaje: error.message});
     }
 });
+rutas.post('/cerrarsesion', (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (token) {
+        invalidTokens.push(token);
+    }
+    res.status(200).json({ mensaje: 'Sesión cerrada exitosamente' });
+});
+
 module.exports = rutas;

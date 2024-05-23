@@ -2,6 +2,7 @@ const express = require('express');
 const rutas = express.Router();
 const AdopcionesModel = require ('../models/Adopciones');
 const UsuarioModel = require('../models/Usuario');
+const VacunasModel = require('../models/Vacunas');
 // 1. endpoint: Traer todas las adopciones
 rutas.get('/traerAdopciones', async (req, res) => {
     try {
@@ -145,6 +146,44 @@ rutas.get('/edadPorUsuario', async (req, res) => {
     }catch (error){
         res.status(500).json
     }
-})
+});
+// Reporte: Vacunas por Adopción
+rutas.get('/vacunasPorAdopcion', async (req, res) => {
+    try {
+        const adopciones = await AdopcionesModel.find();
+        const reporte = await Promise.all(
+            adopciones.map(async (adopcion) => {
+                const vacunas = await VacunasModel.find({ adopcion: adopcion._id });
+                return {
+                    adopcion: {
+                        _id: adopcion._id,
+                        nombre_mascota: adopcion.nombre_mascota
+                    },
+                    vacunas: vacunas.map(vacuna => ({
+                        _id: vacuna._id,
+                        nombre_vacuna: vacuna.nombre_vacuna,
+                        fecha: vacuna.fecha
+                    }))
+                };
+            })
+        );
+        res.json(reporte);
+    } catch (error) {
+        res.status(500).json({ mensaje: error.message });
+    }
+});
+// REPORTE: INDICAR LAS MASCOTAS CON LA MISMA VACUNA
+rutas.get('/mascotasConVacuna/:nombreVacuna', async (req, res) => {
+    try {
+        const nombreVacuna = req.params.nombreVacuna;
+        const vacunas = await VacunasModel.find({ nombre_vacuna: nombreVacuna });
+        const idsMascotas = vacunas.map(vacuna => vacuna.adopcion);
+        const mascotasConVacuna = await AdopcionesModel.find({ _id: { $in: idsMascotas } });
+        const nombresMascotas = mascotasConVacuna.map(mascota => mascota.nombre_mascota);
+        res.json({ mascotasConVacuna: nombresMascotas });
+    } catch (error) {
+        res.status(500).json({ mensaje: error.message });
+    }
+});
 
 module.exports = rutas;
